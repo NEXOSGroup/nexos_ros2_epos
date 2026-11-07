@@ -8,13 +8,13 @@ namespace epos_hardware
 {
     static const std::string HW_NAME = "EposHardware";
 
-    CallbackReturn EposHardware::on_init(const hardware_interface::HardwareInfo &info)
+    CallbackReturn EposHardware::on_init(const hardware_interface::HardwareComponentInterfaceParams &params)
     {
         // Custom bind on_shutdown to stop motors when shutting down control mode.
         // TODO: remove once https://github.com/ros-controls/ros2_control/issues/472 is solved
         rclcpp::on_shutdown(std::bind(&EposHardware::stop, this));
 
-        if (hardware_interface::SystemInterface::on_init(info) != CallbackReturn::SUCCESS)
+        if (hardware_interface::SystemInterface::on_init(params) != CallbackReturn::SUCCESS)
         {
             return CallbackReturn::ERROR;
         }
