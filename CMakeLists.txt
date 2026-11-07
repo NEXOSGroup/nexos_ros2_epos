@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(epos_hardware)
 
 # Default to C++14
@@ -49,22 +49,23 @@ find_package(rclcpp REQUIRED)
 ## COMPILE
 add_library(EposUtils SHARED src/utils.cpp)
 target_include_directories(EposUtils PRIVATE include)
-target_link_libraries(EposUtils ${ftd2xx_LIBRARY} ${EposCmd_LIBRARY})
-ament_target_dependencies(EposUtils
-  hardware_interface
-  rclcpp
+target_link_libraries(EposUtils
+  ${ftd2xx_LIBRARY}
+  ${EposCmd_LIBRARY}
+  hardware_interface::hardware_interface
+  rclcpp::rclcpp
 )
 
 add_library(${PROJECT_NAME} SHARED src/epos_hardware.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE include)
-target_link_libraries(${PROJECT_NAME} EposUtils)
-ament_target_dependencies(${PROJECT_NAME}
-  hardware_interface
-  transmission_interface
-  rclcpp_lifecycle
-  lifecycle_msgs
-  pluginlib
-  rclcpp
+target_link_libraries(${PROJECT_NAME}
+  EposUtils
+  hardware_interface::hardware_interface
+  transmission_interface::transmission_interface
+  rclcpp_lifecycle::rclcpp_lifecycle
+  ${lifecycle_msgs_TARGETS}
+  pluginlib::pluginlib
+  rclcpp::rclcpp
 )
 
 add_executable(check_single_device src/check_single_device.cpp)
