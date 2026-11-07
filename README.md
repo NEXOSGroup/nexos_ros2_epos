@@ -1,86 +1,55 @@
-# Maxon Epos Hardware Interface
-ROS2 control hardware interface for Maxon Epos 2/4 motor controllers using the EPOS Command Library 6.8.1.0.
+# nexos_ros2_epos
 
-Adapted from https://github.com/yoshito-n-students/eposx_hardware and converted to ROS2.
+ROS 2 `ros2_control` hardware interface for **maxon EPOS 2/4** motor controllers,
+using the maxon **EPOS Command Library** over **USB** (FTDI D2XX).
 
-## Installation
-1. Install UDEV rules:
-```commandline
-ros2 run epos_hardware install_udev_rules
-```
-2. Get motor controllers serial id:
-```commandline
+NEXOS fork of [Rick-v-E/epos_hardware](https://github.com/Rick-v-E/epos_hardware)
+(itself derived from [yoshito-n-students/eposx_hardware](https://github.com/yoshito-n-students/eposx_hardware)),
+**ported to ROS 2 Lyrical** and with the proprietary maxon library **de-vendored**.
+
+- Part of the NEXOS ROS 2 module family — see the repo/doc standard in
+  [`nexos_ros2`](https://github.com/NEXOSGroup/nexos_ros2).
+- License: **MIT** (upstream). The maxon EPOS Command Library is **proprietary and
+  not included** — install it yourself (see [docs/BUILD.md](docs/BUILD.md)).
+
+## Status
+
+| Item | State |
+|------|-------|
+| Build on ROS 2 **Lyrical** / Ubuntu 26.04 (aarch64) | ✅ warning-free |
+| Runtime (`list_available_devices`) | ✅ loads system `libEposCmd.so` |
+| maxon library | de-vendored → installed system-wide |
+| Real motor test | ⏳ pending (hardware) |
+
+## Quickstart
+
+```bash
+# 1. Install ROS 2 Lyrical + ros2_control (see docs/BUILD.md)
+sudo apt install ros-lyrical-ros-base ros-lyrical-ros2-control ros-dev-tools
+
+# 2. Install the proprietary maxon EPOS Command Library system-wide
+scripts/install_maxon_epos_library.sh /path/to/EPOS-Linux-Library-En.zip
+
+# 3. Build
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws
+git clone https://github.com/NEXOSGroup/nexos_ros2_epos.git src/nexos_ros2_epos
+source /opt/ros/lyrical/setup.bash
+colcon build --packages-select epos_hardware
+source install/setup.bash
+
+# 4. Find your controller's serial number
 ros2 run epos_hardware list_available_devices
 ```
 
-## Usage
-Add the plugin to the `ros2_control` tag in your URDF file:
-```xml
-<ros2_control name="epos_hardware" type="system">
-    <hardware>
-        <plugin>epos_hardware/EposHardware</plugin>
+Then reference the `epos_hardware/EposHardware` plugin from your robot's URDF
+`ros2_control` tag — see [docs/HARDWARE.md](docs/HARDWARE.md).
 
-         <joint name="front_left_wheel_joint">
-            <param name="device_name">EPOS2</param>
-            <param name="protocol_stack_name">MAXON SERIAL V2</param>
-            <param name="interface_name">USB</param>
-            <param name="serial_number">0xxxxxxxxxxxxx</param>
-            <param name="clear_faults">false</param>
-            <param name="profile_position_velocity">30</param>
-            <param name="profile_position_acceleration">50</param>
-            <param name="profile_position_deceleration">50</param>
-            <param name="profile_velocity_acceleration">50</param>
-            <param name="profile_velocity_deceleration">50</param>
+## Documentation
 
-            <command_interface name="velocity"/>
-            <state_interface name="position"/>
-            <state_interface name="velocity"/>
-        </joint>
-        <transmission name="rear_right_wheel_joint_transmission">
-            <plugin>transmission_interface/SimpleTransmission</plugin>
-            <actuator name="rear_right_motor" role="rear_right_motor"/>
-            <joint name="rear_right_wheel_joint" role="rear_right_wheel_joint">
-                <mechanical_reduction>53</mechanical_reduction>
-            </joint>
-        </transmission>
-        
-        <joint name="front_right_wheel_joint">
-            <param name="device_name">EPOS2</param>
-            <param name="protocol_stack_name">MAXON SERIAL V2</param>
-            <param name="interface_name">USB</param>
-            <param name="serial_number">0xxxxxxxxxxxxx</param>
-            <param name="clear_faults">false</param>
-            <param name="profile_position_velocity">30</param>
-            <param name="profile_position_acceleration">50</param>
-            <param name="profile_position_deceleration">50</param>
-            <param name="profile_velocity_acceleration">50</param>
-            <param name="profile_velocity_deceleration">50</param>
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the driver works
+- [docs/BUILD.md](docs/BUILD.md) — prerequisites, library install, build, Lyrical port notes
+- [docs/HARDWARE.md](docs/HARDWARE.md) — wiring, udev, URDF device parameters
+- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — common problems & fixes
 
-            <command_interface name="velocity"/>
-            <state_interface name="position"/>
-            <state_interface name="velocity"/>
-        </joint>
-         <transmission name="front_right_wheel_joint_transmission">
-            <plugin>transmission_interface/SimpleTransmission</plugin>
-            <actuator name="rear_right_motor" role="rear_right_motor"/>
-            <joint name="front_right_wheel_joint" role="front_right_wheel_joint">
-                <mechanical_reduction>-53</mechanical_reduction>
-            </joint>
-        </transmission>
-</ros2_control>
-```
-
-In our setup, every controller is connected seperately to the computer using USB, however, all methods that work with the Epos Command Library should also work with this code. For each joint, an `device_name`, `protocol_stack_name`, `interface_name`, `serial_number` and `encoder_resolution` parameter should be set. Additionally, a `clear_faults` parameter can be set, which clears all device faults upon start.
-
-The `profile_position_velocity` parameter sets the velocity in the position profile in rad/s before the reduction. `profile_position_acceleration` and `profile_position_deceleration` are setting the corresponding acceleration and deceleration values in rad/s<sup>2</sup> before the reduction. The `profile_velocity_acceleration` and `profile_velocity_deceleration` are setting these values for the profile velocity mode.
-
-
-## Supported command interfaces
-Command interface `position`, `velocity` and `current` are supported.
-
-## Supported state interfaces
-The following state interfaces are supported:
-
-* `position` (Position)
-* `velocity` (Velocity) 
-* `current` (Current \[A\])
+> Defence-specific deployment/security documentation is maintained privately in
+> `nexos_ros2_defence` and is intentionally not part of this public repository.
