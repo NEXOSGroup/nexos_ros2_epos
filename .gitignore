@@ -1,0 +1,7 @@
+
+# Proprietary maxon EPOS / FTDI libraries are NOT vendored here (license).
+# Install them system-wide via scripts/install_maxon_epos_library.sh
+/lib/arm/
+/lib/intel/
+libEposCmd.so*
+libftd2xx.so*
