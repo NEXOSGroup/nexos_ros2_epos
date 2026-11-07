@@ -10,29 +10,28 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# Processor classification is based on install.sh of the epos command library
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  set(ftd2xx_LIBRARY ${PROJECT_SOURCE_DIR}/lib/intel/x86_64/libftd2xx.so.1.4.8)
-  set(EposCmd_LIBRARY ${PROJECT_SOURCE_DIR}/lib/intel/x86_64/libEposCmd.so.6.8.1.0)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86"
-       OR CMAKE_SYSTEM_PROCESSOR STREQUAL "i386"
-       OR CMAKE_SYSTEM_PROCESSOR STREQUAL "i486"
-       OR CMAKE_SYSTEM_PROCESSOR STREQUAL "i586"
-       OR CMAKE_SYSTEM_PROCESSOR STREQUAL "i686")
-  set(ftd2xx_LIBRARY ${PROJECT_SOURCE_DIR}/lib/intel/x86/libftd2xx.so.1.4.8)
-  set(EposCmd_LIBRARY ${PROJECT_SOURCE_DIR}/lib/intel/x86/libEposCmd.so.6.8.1.0)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv6")
-  set(ftd2xx_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v6/libftd2xx.so.1.4.8)
-  set(EposCmd_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v6/libEposCmd.so.6.8.1.0)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
-  set(ftd2xx_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v7/libftd2xx.so.1.4.8)
-  set(EposCmd_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v7/libEposCmd.so.6.8.1.0)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-  set(ftd2xx_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v8/libftd2xx.so.1.4.8)
-  set(EposCmd_LIBRARY ${PROJECT_SOURCE_DIR}/lib/arm/v8/libEposCmd.so.6.8.1.0)
-else()
-  message(FATAL_ERROR "Unsupported processor type: ${CMAKE_SYSTEM_PROCESSOR}")
+# maxon EPOS Command Library + FTDI D2XX are PROPRIETARY and are NOT vendored in
+# this repository. Install them system-wide first with the official maxon installer
+# (EPOS_Linux_Library/install.sh -> /opt/EposCmdLib_* and symlinks in /usr/lib).
+# See docs/BUILD.md and scripts/install_maxon_epos_library.sh.
+find_library(EposCmd_LIBRARY NAMES EposCmd
+  PATHS /usr/lib /usr/local/lib
+        /opt/EposCmdLib_6.8.1.0/lib/v8
+        /opt/EposCmdLib_6.8.1.0/lib/v7
+        /opt/EposCmdLib_6.8.1.0/lib/v6)
+find_library(ftd2xx_LIBRARY NAMES ftd2xx
+  PATHS /usr/lib /usr/local/lib
+        /opt/EposCmdLib_6.8.1.0/lib/v8
+        /opt/EposCmdLib_6.8.1.0/lib/v7
+        /opt/EposCmdLib_6.8.1.0/lib/v6)
+if(NOT EposCmd_LIBRARY OR NOT ftd2xx_LIBRARY)
+  message(FATAL_ERROR
+    "maxon EPOS Command Library not found. Install it first (see docs/BUILD.md): "
+    "run the official EPOS_Linux_Library/install.sh. "
+    "Searched /usr/lib, /usr/local/lib and /opt/EposCmdLib_6.8.1.0.")
 endif()
+message(STATUS "EposCmd library: ${EposCmd_LIBRARY}")
+message(STATUS "ftd2xx library:  ${ftd2xx_LIBRARY}")
 
 find_package(ament_cmake REQUIRED)
 
@@ -79,8 +78,8 @@ target_link_libraries(list_available_devices EposUtils)
 pluginlib_export_plugin_description_file(hardware_interface epos_hardware.xml)
 
 # INSTALL
-install(FILES ${ftd2xx_LIBRARY} DESTINATION lib/ RENAME libftd2xx.so)
-install(FILES ${EposCmd_LIBRARY} DESTINATION lib/ RENAME libEposCmd.so)
+# NOTE: libEposCmd.so / libftd2xx.so are provided system-wide by the maxon
+# installer (/usr/lib) and are intentionally NOT installed/redistributed here.
 install(TARGETS ${PROJECT_NAME} EposUtils DESTINATION lib)
 install(TARGETS check_single_device list_available_devices DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/ DESTINATION include)
