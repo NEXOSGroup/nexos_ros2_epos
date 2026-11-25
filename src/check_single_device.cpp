@@ -38,6 +38,7 @@ int main(int argc, char **argv)
     if (!node_handle_)
     {
         std::cout << "Could not find motor" << std::endl;
+        return 1;
     }
 
     std::cout << "Found motor " << argv[1] << std::endl;
